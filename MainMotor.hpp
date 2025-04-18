@@ -1,69 +1,115 @@
-
+#pragma once
+#include "FloorLevelSensor.hpp"
+#include <Arduino.h>
 
 class MainMotor
 {
 public:
-    MainMotor() = default;
+    // Constructor accepts the floor sensor by reference and the stepper control pins (IN1-IN4)
+    MainMotor(FloorLevelSensor &sensor, int in1, int in2, int in3, int in4)
+        : floorSensor(sensor), busy(false), targetFloor(-1),
+          IN1(in1), IN2(in2), IN3(in3), IN4(in4), direction(true), stepIndex(0)
+    {
+    }
     ~MainMotor() = default;
 
-    void init()
+    void Setup()
     {
-        // Initialization code for the motor
-    }
-    void startMotor()
-    {
-        // Code to start the motor
-        // For example, setting a PWM signal to a certain pin
-        analogWrite(MOTOR_PIN, 255); // Example for full speed
-    }
-    void stopMotor()
-    {
-        // Code to stop the motor
-        analogWrite(MOTOR_PIN, 0); // Stop the motor
-    }
-    void setSpeed(int speed)
-    {
-        // Code to set the motor speed
-        // Ensure speed is within valid range (0-255 for PWM)
-        if (speed < 0)
-            speed = 0;
-        if (speed > 255)
-            speed = 255;
-        analogWrite(MOTOR_PIN, speed);
-    }
-    void reverseDirection()
-    {
-        // Code to reverse the motor direction
-        // This could involve changing the polarity of the motor driver
-        digitalWrite(DIR_PIN, !digitalRead(DIR_PIN)); // Example for reversing direction
-    }
-    void setDirection(bool direction)
-    {
-        // Code to set the motor direction
-        digitalWrite(DIR_PIN, direction); // Set the direction pin
-    }
-    void emergencyStop()
-    {
-        // Code to perform an emergency stop
+        pinMode(IN1, OUTPUT);
+        pinMode(IN2, OUTPUT);
+        pinMode(IN3, OUTPUT);
+        pinMode(IN4, OUTPUT);
         stopMotor();
-        // Additional safety measures can be added here
+        RequestFloor(0);
     }
-    void checkMotorStatus()
+
+    // Request the elevator to go to a specific floor (0: ground, 1: middle, 2: top)
+    bool RequestFloor(int floor)
     {
-        // Code to check the motor status
-        // This could involve reading a status pin or checking for errors
-        if (digitalRead(STATUS_PIN) == HIGH)
+        if (busy)
+            return false;
+        targetFloor = floor;
+        busy = true;
+        int currentFloor = floorSensor.GetElevatorFloorInt();
+        if (targetFloor > currentFloor)
+            direction = true; // upward
+        else if (targetFloor < currentFloor)
+            direction = false; // downward
+        else
         {
-            // Motor is running normally
+            busy = false;
+            return true; // already at floor
+        }
+        return true;
+    }
+
+    // Loop: step the motor towards the target floor
+    void Loop()
+    {
+        if (!busy)
+            return;
+        int currentFloor = floorSensor.GetElevatorFloorInt();
+        if (currentFloor == targetFloor)
+        {
+            stopMotor();
+            busy = false;
+            targetFloor = -1;
         }
         else
         {
-            // Handle motor error or fault condition
+            stepMotor(direction);
+            delayMicroseconds(1200); // ~500-1200us for 28BYJ-48
         }
     }
 
+    void EmergencyStop()
+    {
+        stopMotor();
+        busy = false;
+        targetFloor = -1;
+    }
+
+    // Accessors for display
+    bool isBusy() const { return busy; }
+    int getTargetFloor() const { return targetFloor; }
+    bool getDirection() const { return direction; }
+
 private:
-    const int MOTOR_PIN = 9;  // Example PWM pin for motor control
-    const int DIR_PIN = 8;    // Example pin for motor direction control
-    const int STATUS_PIN = 7; // Example pin for motor status feedback
+    // 8-step sequence for 28BYJ-48
+    const uint8_t stepSequence[8][4] = {
+        {1, 0, 0, 0},
+        {1, 1, 0, 0},
+        {0, 1, 0, 0},
+        {0, 1, 1, 0},
+        {0, 0, 1, 0},
+        {0, 0, 1, 1},
+        {0, 0, 0, 1},
+        {1, 0, 0, 1}};
+
+    void stepMotor(bool dir)
+    {
+        if (dir)
+            stepIndex = (stepIndex + 1) % 8;
+        else
+            stepIndex = (stepIndex + 7) % 8;
+        digitalWrite(IN1, stepSequence[stepIndex][0]);
+        digitalWrite(IN2, stepSequence[stepIndex][1]);
+        digitalWrite(IN3, stepSequence[stepIndex][2]);
+        digitalWrite(IN4, stepSequence[stepIndex][3]);
+    }
+
+    void stopMotor()
+    {
+        digitalWrite(IN1, LOW);
+        digitalWrite(IN2, LOW);
+        digitalWrite(IN3, LOW);
+        digitalWrite(IN4, LOW);
+    }
+
+    FloorLevelSensor &floorSensor;
+    bool busy;
+    int targetFloor;
+    bool direction;
+    int stepIndex;
+    const int IN1, IN2, IN3, IN4;
 };

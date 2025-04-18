@@ -1,5 +1,7 @@
 {
-    "board": "arduino:avr:uno",
-    "programmer": "avrisp",
-    "sketch": "ZZZ_Elevator.ino"
+    "board": "esp32:esp32:nodemcu-32s",
+    "programmer": "esptool",
+    "sketch": "ZZZ_Elevator.ino",
+    "configuration": "FlashFreq=80,UploadSpeed=921600,DebugLevel=error,EraseFlash=none",
+    "port": "COM5"
 }
