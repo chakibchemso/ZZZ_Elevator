@@ -1,3 +1,20 @@
 {
-    "C_Cpp.errorSquiggles": "enabled"
+    "C_Cpp.intelliSenseEngine": "default",
+    "idf.espIdfPathWin": "C:\\Users\\chakibchemso\\esp\\v5.4.1\\esp-idf",
+    "idf.pythonInstallPath": "C:\\Users\\chakibchemso\\.espressif\\tools\\idf-python\\3.11.2\\python.exe",
+    "idf.openOcdConfigs": [
+        "interface/ftdi/esp32_devkitj_v1.cfg",
+        "target/esp32.cfg"
+    ],
+    "idf.portWin": "COM7",
+    "idf.toolsPathWin": "C:\\Users\\chakibchemso\\.espressif",
+    "idf.customExtraVars": {
+        "IDF_TARGET": "esp32"
+    },
+    "C_Cpp.default.compilerPath": "cl.exe",
+    "idf.flashType": "UART",
+    "idf.enableCCache": true,
+    "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
+        "clang-diagnostic-error"
+    ]
 }
