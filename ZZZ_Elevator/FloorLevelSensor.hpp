@@ -1,38 +1,34 @@
 #pragma once
-#include "SR04Filter.hpp"
+#include <Arduino.h>
 
 class FloorLevelSensor
 {
 public:
-    FloorLevelSensor(SR04Filter &sr04, float levelZeroThreshold, float levelOneThreshold, float levelTwoThreshold)
-        : sr04Filter(sr04), zeroThresh(levelZeroThreshold), oneThresh(levelOneThreshold), twoThresh(levelTwoThreshold) {}
+    FloorLevelSensor(uint8_t pinZero, uint8_t pinOne, uint8_t pinTwo)
+        : pinZero(pinZero), pinOne(pinOne), pinTwo(pinTwo)
+    {
+        pinMode(pinZero, INPUT);
+        pinMode(pinOne, INPUT);
+        pinMode(pinTwo, INPUT);
+    }
 
     bool isLevelZero() const
     {
-        float height = getHeight();
-        return height >= zeroThresh && height < oneThresh;
+        return digitalRead(pinZero) == LOW;
     }
 
     bool isLevelOne() const
     {
-        float height = getHeight();
-        return height >= oneThresh && height < twoThresh;
+        return digitalRead(pinOne) == LOW;
     }
 
     bool isLevelTwo() const
     {
-        float height = getHeight();
-        return height >= twoThresh;
+        return digitalRead(pinTwo) == LOW;
     }
 
 private:
-    SR04Filter &sr04Filter;
-    float zeroThresh;
-    float oneThresh;
-    float twoThresh;
-
-    float getHeight() const
-    {
-        return sr04Filter.getFiltered();
-    }
+    uint8_t pinZero;
+    uint8_t pinOne;
+    uint8_t pinTwo;
 };

@@ -8,23 +8,17 @@
 #include "FloorLevelSensor.hpp"
 #include "MainMotor.hpp"
 #include "Display.hpp"
+#include "Buzzer.hpp"
 
 // Simple Dependency Injection
 uint8_t buttonPins[7] = {BUTTONINT0_PIN, BUTTONINT1_PIN, BUTTONINT2_PIN,
                          BUTTONEXT0_PIN, BUTTONEXT1_PIN, BUTTONEXT2_PIN,
                          BUTTONEMS_PIN};
 InputProvider input_provider(buttonPins);
-
-SR04Filter sr04_filter(TRIG_PIN, ECHO_PIN);
-
-float levelZeroThreshold = 5.0f;
-float levelOneThreshold = 10.0f;
-float levelTwoThreshold = 15.0f;
-FloorLevelSensor level_sensor(sr04_filter, levelZeroThreshold, levelOneThreshold, levelTwoThreshold);
-
+FloorLevelSensor level_sensor(HAL0_PIN, HAL1_PIN, HAL2_PIN);
 MainMotor main_motor(MOTOR_PIN);
-
 Display display;
+Buzzer buzzer(BUZZER_PIN);
 
 // Main Program
 
@@ -39,19 +33,22 @@ void f1()
     PAUSE_AT_TARGET,
     RETURNING
   };
-  static State state = IDLE;
-  static int callerFloor = -1, targetFloor = -1;
-  static unsigned long pauseTimer = 0;
-  static State lastState = IDLE;
-  const int MOTOR_SPEED = 10;
 
-  int currentFloor = -1;
+  static State state = IDLE;
+  static State lastState = IDLE;
+  static int callerFloor = -1, targetFloor = -1, currentFloor = -1;
+  static unsigned long pauseTimer = 0;
+  const int MOTOR_SPEED = 5;
+
   if (level_sensor.isLevelZero())
     currentFloor = 0;
   else if (level_sensor.isLevelOne())
     currentFloor = 1;
   else if (level_sensor.isLevelTwo())
     currentFloor = 2;
+
+  Serial.print("Current Floor: ");
+  Serial.println(currentFloor);
 
   switch (state)
   {
@@ -128,7 +125,7 @@ void f1()
     }
     break;
   case PAUSE_AT_TARGET:
-    if (millis() - pauseTimer >= 5000UL)
+    if (millis() - pauseTimer >= 3000UL)
     {
       state = RETURNING;
     }
@@ -158,6 +155,7 @@ void f1()
       break;
     case WAIT_INTERNAL:
       Serial.println("Arrived at caller, waiting for internal selection");
+      buzzer.beep();
       break;
     case TO_TARGET:
       Serial.print("Internal call: moving to floor ");
@@ -165,12 +163,14 @@ void f1()
       break;
     case PAUSE_AT_TARGET:
       Serial.println("Arrived at target, pausing 5s");
+      buzzer.beep();
       break;
     case RETURNING:
       Serial.println("Returning to floor 0");
       break;
     case IDLE:
       Serial.println("Idle at floor 0");
+      buzzer.beep();
       break;
     }
     lastState = state;
@@ -190,30 +190,27 @@ void f1()
 
   display.showFloor(currentFloor >= 0 ? currentFloor : 0, 0, false);
   display.showStatus(state == IDLE ? "Idle" : "Busy");
-  {
-    char heightBuf[20];
-    sprintf(heightBuf, "Ht:%.1f cm", sr04_filter.getFiltered());
-    display.showWarning(heightBuf);
-  }
+
+  delay(1);
 }
 
 void setup()
 {
   Wire.begin(SDA, SCL); // SDA, SCL
   Serial.begin(115200);
-  sr04_filter.setup();
   main_motor.setup();
   display.begin();
   pinMode(LEDBUSY_PIN, OUTPUT);
   pinMode(LEDOPEN_PIN, OUTPUT);
   digitalWrite(LEDBUSY_PIN, LOW);
   digitalWrite(LEDOPEN_PIN, HIGH);
+  buzzer.setup();
   Serial.println("ZZZ Elevator Control System Initialized");
 }
 
 void loop()
 {
   input_provider.loop();
-  sr04_filter.loop();
+  buzzer.loop();
   f1();
 }

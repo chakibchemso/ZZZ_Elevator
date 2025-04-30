@@ -7,15 +7,20 @@
 #define TRIG_PIN 19
 #define ECHO_PIN 18
 
+// A3144E
+#define HAL0_PIN 19
+#define HAL1_PIN 18
+#define HAL2_PIN 5
+
 // SG90
-#define SERVO_PIN 5
+#define SERVO_PIN 3
 
 // LED
 #define LEDBUSY_PIN 16
 #define LEDOPEN_PIN 4
 
 // BUZZER
-#define BUZZER_PIN 7
+#define BUZZER_PIN 1
 
 // BUTTONS
 #define BUTTONEXT0_PIN 36

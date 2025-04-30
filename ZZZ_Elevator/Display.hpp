@@ -23,16 +23,16 @@ public:
         lcd.setCursor(0, 0);
         lcd.print("Floor: ");
         lcd.print(floor);
-        lcd.print("   ");
+        lcd.print(" ");
         if (direction > 0)
             lcd.print("▲");
         else if (direction < 0)
             lcd.print("▼");
         else
             lcd.print(" ");
-        lcd.print("  Door: ");
-        lcd.print(doorOpen ? "Open " : "Closed");
-        lcd.print("   "); // clear trailing chars
+        lcd.print(" Door: ");
+        lcd.print(doorOpen ? "O" : "C");
+        lcd.print(" "); // clear trailing chars
     }
 
     // Show status message on row 1
